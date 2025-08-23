@@ -1,6 +1,7 @@
 KERNELSRC=.
 
-ASFLAGS=-mcpu=ultrasparc -I$(KERNELSRC)
+ASFLAGS=-g -mcpu=ultrasparc -I$(KERNELSRC)
+CFLAGS=-g -O3
 
 all: cfutest
 
