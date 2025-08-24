@@ -11,7 +11,8 @@ void* U3memcpy(void* dest, const void* src, size_t len);
 size_t U1copy_from_user(void* dest, const void* src, size_t len);
 size_t U3copy_from_user(void* dest, const void* src, size_t len);
 
-size_t (*copy_from_user)(void*, const void*, size_t) = U3copy_from_user;
+typedef size_t copy_fn(void*, const void*, size_t);
+copy_fn *copy_from_user = U3copy_from_user;
 
 #define BUFFERSIZE 8192
 #define STANDARDSIZE 1024
@@ -50,6 +51,39 @@ void my_sigsegv(int sig, siginfo_t *info, void *ucontext)
     signal(SIGSEGV, SIG_DFL);
 }
 
+void run_test(copy_fn *fn, char *dest, const char *src, size_t destspace, size_t try_to_copy, size_t till_fault)
+{
+    size_t indicated_remaining, actual_remaining;
+    char* actual_end;
+    const char* error_type;
+
+    last_sigsegv_pc = 0;
+    memset(dest, 0xFF, destspace);
+    indicated_remaining = fn(dest, src, try_to_copy);
+    actual_end = memchr(dest, 0xFF, destspace);
+    if (actual_end == NULL)
+        actual_end = dest + destspace;
+    actual_remaining = try_to_copy - (actual_end-dest);
+
+    error_type = NULL;
+    if (indicated_remaining > try_to_copy)
+        error_type = "UNREASONABLY HIGH";
+    else if (indicated_remaining != try_to_copy && dest[try_to_copy - indicated_remaining - 1] != (char)0xAA)
+        error_type = "TOO LOW";
+    else if (dest[try_to_copy - indicated_remaining] != (char)0xFF)
+        error_type = "TOO_HIGH";
+
+    if (error_type)
+    {
+        printf("%s: %d bytes till fault returned %zd bytes left, but should have returned %zd, fault at %llx\n", error_type, till_fault, indicated_remaining, actual_remaining, last_sigsegv_pc);
+    }
+}
+
+void run_from_user_test(size_t bytes_till_fault)
+{
+    run_test(copy_from_user, dstbuffer, srcbuffer + BUFFERSIZE - bytes_till_fault, STANDARDSIZE + 128, STANDARDSIZE, bytes_till_fault);
+}
+
 int main(int argc, char** argv)
 {
     int i;
@@ -83,28 +117,7 @@ int main(int argc, char** argv)
 
     for (i = 0; i < STANDARDSIZE; i++)
     {
-        size_t indicated_remaining, actual_remaining;
-        char* actual_end;
-        const char* error_type;
-        memset(dstbuffer, 0xFF, BUFFERSIZE);
-        indicated_remaining = copy_from_user(dstbuffer, srcbuffer+BUFFERSIZE-i, STANDARDSIZE);
-        actual_end = memchr(dstbuffer, 0xFF, BUFFERSIZE);
-        if (actual_end == NULL)
-            actual_end = dstbuffer + STANDARDSIZE;
-        actual_remaining = STANDARDSIZE - (actual_end-dstbuffer);
-
-        error_type = NULL;
-        if (indicated_remaining > STANDARDSIZE)
-            error_type = "UNREASONABLY HIGH";
-        else if (indicated_remaining != STANDARDSIZE && dstbuffer[STANDARDSIZE - indicated_remaining - 1] != (char)0xAA)
-            error_type = "TOO LOW";
-        else if (dstbuffer[STANDARDSIZE - indicated_remaining] != (char)0xFF)
-            error_type = "TOO_HIGH";
-
-        if (error_type)
-        {
-            printf("%s: %d bytes till fault returned %zd bytes left, but should have returned %zd, fault at %llx\n", error_type, i, indicated_remaining, actual_remaining, last_sigsegv_pc);
-        }
+        run_from_user_test(i);
     }
     return 0;
 }
