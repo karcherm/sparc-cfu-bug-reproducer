@@ -83,24 +83,27 @@ int main(int argc, char** argv)
 
     for (i = 0; i < STANDARDSIZE; i++)
     {
-        size_t remaining;
+        size_t indicated_remaining, actual_remaining;
+        char* actual_end;
+        const char* error_type;
         memset(dstbuffer, 0xFF, BUFFERSIZE);
-        remaining = copy_from_user(dstbuffer, srcbuffer+BUFFERSIZE-i, STANDARDSIZE);
-        if (remaining > STANDARDSIZE)
+        indicated_remaining = copy_from_user(dstbuffer, srcbuffer+BUFFERSIZE-i, STANDARDSIZE);
+        actual_end = memchr(dstbuffer, 0xFF, BUFFERSIZE);
+        if (actual_end == NULL)
+            actual_end = dstbuffer + STANDARDSIZE;
+        actual_remaining = STANDARDSIZE - (actual_end-dstbuffer);
+
+        error_type = NULL;
+        if (indicated_remaining > STANDARDSIZE)
+            error_type = "UNREASONABLY HIGH";
+        else if (indicated_remaining != STANDARDSIZE && dstbuffer[STANDARDSIZE - indicated_remaining - 1] != (char)0xAA)
+            error_type = "TOO LOW";
+        else if (dstbuffer[STANDARDSIZE - indicated_remaining] != (char)0xFF)
+            error_type = "TOO_HIGH";
+
+        if (error_type)
         {
-            printf("WAY TOO HIGH: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
-        }
-        else if (remaining != STANDARDSIZE && dstbuffer[STANDARDSIZE - remaining - 1] != (char)0xAA)
-        {
-            char* actual_end = memchr(dstbuffer, 0xFF, BUFFERSIZE);
-            printf("TOO LOW: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
-            printf(" correct remainder: %zd\n", STANDARDSIZE - (actual_end-dstbuffer));
-        }
-        else if (dstbuffer[STANDARDSIZE - remaining] != (char)0xFF)
-        {
-            char* actual_end = memchr(dstbuffer, 0xFF, BUFFERSIZE);
-            printf("TOO HIGH: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
-            printf(" correct remainder: %zd\n", STANDARDSIZE - (actual_end-dstbuffer));
+            printf("%s: %d bytes till fault returned %zd bytes left, but should have returned %zd, fault at %llx\n", error_type, i, indicated_remaining, actual_remaining, last_sigsegv_pc);
         }
     }
     return 0;
