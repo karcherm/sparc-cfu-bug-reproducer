@@ -1,6 +1,5 @@
-Reproducer for UltraSPARC3 `copy_from_user` bug
+Comprehensive tests for `copy_from_user` in Linux for SPARC
 ===============================================
 
-This repository contains userspace code that shows the bogus return value of
-`copy_from_user´ when it encounters a fault.
-
+This repository contains a testsuite for copy_from_user, and has fixes for several
+implemenation variants.
