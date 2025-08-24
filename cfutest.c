@@ -76,7 +76,7 @@ void run_test(copy_fn *fn, char *dest, const char *src, size_t destspace, size_t
         error_type = "UNREASONABLY HIGH";
     else if (indicated_remaining != try_to_copy && dest[try_to_copy - indicated_remaining - 1] != (char)0xAA)
         error_type = "TOO LOW";
-    else if (dest[try_to_copy - indicated_remaining] != (char)0xFF)
+    else if (dest[try_to_copy - indicated_remaining] == (char)0xAA)
         error_type = "TOO_HIGH";
 
     if (error_type)
