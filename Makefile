@@ -1,6 +1,6 @@
 KERNELSRC=.
 
-ASFLAGS=-g -mcpu=ultrasparc -include userheader.h -I $(KERNELSRC)
+ASFLAGS=-g -mcpu=niagara4 -include userheader.h -include asm/asi.h -I $(KERNELSRC)
 CFLAGS=-g -O3
 
 all: cfutest
@@ -14,7 +14,13 @@ U1memcpy.o: $(KERNELSRC)/arch/sparc/lib/U1memcpy.S
 U3memcpy.o: $(KERNELSRC)/arch/sparc/lib/U3memcpy.S
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $<
 
-OBJECTS = cfutest.o U1copy_from_user.o U3copy_from_user.o U1memcpy.o U3memcpy.o
+Memcpy_utils.o: $(KERNELSRC)/arch/sparc/lib/Memcpy_utils.S
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $<
+
+NG4memcpy.o: $(KERNELSRC)/arch/sparc/lib/NG4memcpy.S
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $< -D 'VISEntryHalfFast(x)=VISEntryHalf' -D VISExitHalfFast=VISExitHalf
+
+OBJECTS = cfutest.o U1copy_from_user.o U3copy_from_user.o NG4copy_from_user.o U1memcpy.o U3memcpy.o Memcpy_utils.o NG4memcpy.o
 cfutest: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
