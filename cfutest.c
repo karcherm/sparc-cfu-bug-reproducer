@@ -26,12 +26,14 @@ typedef struct {
 const extable_t* const extable_start = (const extable_t*)&__start___ex_table;
 const extable_t* const extable_end = (const extable_t*)&__stop___ex_table;
 
+volatile uint64_t last_sigsegv_pc;
+
 void my_sigsegv(int sig, siginfo_t *info, void *ucontext)
 {
     const extable_t *ptr;
     struct sigcontext *sc = (struct sigcontext*)ucontext;
+    last_sigsegv_pc = sc->sigc_regs.tpc;
     uint32_t low_pc = sc->sigc_regs.tpc & 0xffffffff;
-    printf("SIGSEGV at %p accessing %p: code:%d\n", sc->sigc_regs.tpc, info->si_addr, info->si_code);
     for (ptr = extable_start; ptr < extable_end; ptr++)
     {
         if (ptr->code_addr == low_pc)
@@ -41,8 +43,7 @@ void my_sigsegv(int sig, siginfo_t *info, void *ucontext)
             return;
         }
     }
-    puts("No handler found");
-    exit(2);
+    signal(SIGSEGV, SIG_DFL);
 }
 
 int main(void)
@@ -57,16 +58,32 @@ int main(void)
     }
     dstbuffer = srcbuffer + 2*BUFFERSIZE;
     munmap(srcbuffer + BUFFERSIZE, BUFFERSIZE);
+    memset(srcbuffer, 0xAA, BUFFERSIZE);
+
     sa.sa_sigaction = my_sigsegv;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_SIGINFO;
     sigaction(SIGSEGV, &sa, NULL);
 
-    for (i = 0; i < 1024; i++)
+    for (i = 0; i < STANDARDSIZE; i++)
     {
-        size_t remaining = U3copy_from_user(dstbuffer, srcbuffer+BUFFERSIZE-i, 1024);
-        if (remaining > 1024)
-                printf("BAD: %d %zd\n", i, remaining);
+        size_t remaining;
+        memset(dstbuffer, 0xFF, BUFFERSIZE);
+        remaining = U3copy_from_user(dstbuffer, srcbuffer+BUFFERSIZE-i, STANDARDSIZE);
+        if (remaining > STANDARDSIZE)
+        {
+            printf("WAY TOO HIGH: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
+        }
+        else if (remaining != STANDARDSIZE && dstbuffer[STANDARDSIZE - remaining - 1] != (char)0xAA)
+        {
+            printf("TOO LOW: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
+        }
+        else if (dstbuffer[STANDARDSIZE - remaining] != (char)0xFF)
+        {
+            char* actual_end = memchr(dstbuffer, 0xFF, BUFFERSIZE);
+            printf("TOO HIGH: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
+            printf(" correct remainder: %zd\n", STANDARDSIZE - (actual_end-dstbuffer));
+        }
     }
     return 0;
 }
