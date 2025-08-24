@@ -20,12 +20,15 @@ Memcpy_utils.o: $(KERNELSRC)/arch/sparc/lib/Memcpy_utils.S
 NGmemcpy.o: $(KERNELSRC)/arch/sparc/lib/NGmemcpy.S
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $< -D 'VISEntryHalfFast(x)=VISEntryHalf' -D VISExitHalfFast=VISExitHalf
 
+NG2memcpy.o: $(KERNELSRC)/arch/sparc/lib/NG2memcpy.S
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $<
+
 NG4memcpy.o: $(KERNELSRC)/arch/sparc/lib/NG4memcpy.S
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $< -D 'VISEntryHalfFast(x)=VISEntryHalf' -D VISExitHalfFast=VISExitHalf
 
 OBJECTS = cfutest.o \
-          U1copy_from_user.o U3copy_from_user.o NGcopy_from_user.o NG4copy_from_user.o \
-          U1memcpy.o U3memcpy.o Memcpy_utils.o NGmemcpy.o NG4memcpy.o
+          U1copy_from_user.o U3copy_from_user.o NGcopy_from_user.o NG2copy_from_user.o NG4copy_from_user.o \
+          U1memcpy.o U3memcpy.o Memcpy_utils.o NGmemcpy.o NG2memcpy.o NG4memcpy.o
 cfutest: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
