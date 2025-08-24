@@ -75,18 +75,21 @@ void run_test(copy_fn *fn, char *dest, const char *src, size_t destspace, size_t
 
     if (error_type)
     {
-        printf("%s: %d bytes till fault returned %zd bytes left, but should have returned %zd, fault at %llx\n", error_type, till_fault, indicated_remaining, actual_remaining, last_sigsegv_pc);
+        printf("%s: %d bytes till fault returned %zd of %zd bytes left, but should have returned %zd, fault at %llx\n", error_type, till_fault, indicated_remaining, try_to_copy, actual_remaining, last_sigsegv_pc);
     }
 }
 
-void run_from_user_test(size_t bytes_till_fault)
+void run_from_user_test(size_t request_size, size_t bytes_till_fault, size_t dst_misalignment)
 {
-    run_test(copy_from_user, dstbuffer, srcbuffer + BUFFERSIZE - bytes_till_fault, STANDARDSIZE + 128, STANDARDSIZE, bytes_till_fault);
+    run_test(copy_from_user, dstbuffer + dst_misalignment, srcbuffer + BUFFERSIZE - bytes_till_fault, request_size + 128, request_size, bytes_till_fault);
 }
 
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
+const size_t copy_sizes[] = {1, 7, 8, 15, 16, 17, 191, 192, 193, 319, 320, 321, 511, 1023, 1024};
+const size_t misalignments[] = {0, 1, 7, 8, 15, 16, 17, 33, 63};
 int main(int argc, char** argv)
 {
-    int i;
+    int i, sizeidx, alignidx;
     struct sigaction sa;
     if (argc > 1)
     {
@@ -115,9 +118,16 @@ int main(int argc, char** argv)
     sa.sa_flags = SA_SIGINFO;
     sigaction(SIGSEGV, &sa, NULL);
 
-    for (i = 0; i < STANDARDSIZE; i++)
+    for (sizeidx = 0; sizeidx < ARRAY_SIZE(copy_sizes); sizeidx++)
     {
-        run_from_user_test(i);
+        size_t copy_size = copy_sizes[sizeidx];
+        for (alignidx = 0; alignidx < ARRAY_SIZE(misalignments); alignidx++)
+        {
+            for (i = 0; i <= copy_size; i++)
+            {
+                run_from_user_test(copy_size, i, misalignments[alignidx]);
+            }
+        }
     }
     return 0;
 }
