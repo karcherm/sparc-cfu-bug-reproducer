@@ -8,9 +8,11 @@
 
 void* U1memcpy(void* dest, const void* src, size_t len);
 void* U3memcpy(void* dest, const void* src, size_t len);
+void* NGmemcpy(void* dest, const void* src, size_t len);
 void* NG4memcpy(void* dest, const void* src, size_t len);
 size_t U1copy_from_user(void* dest, const void* src, size_t len);
 size_t U3copy_from_user(void* dest, const void* src, size_t len);
+size_t NGcopy_from_user(void* dest, const void* src, size_t len);
 size_t NG4copy_from_user(void* dest, const void* src, size_t len);
 
 typedef size_t copy_fn(void*, const void*, size_t);
@@ -99,6 +101,8 @@ int main(int argc, char** argv)
             copy_from_user = U1copy_from_user;
         else if(!strcmp(argv[1], "--u3"))
             copy_from_user = U3copy_from_user;
+        else if(!strcmp(argv[1], "--ng"))
+            copy_from_user = NGcopy_from_user;
         else if(!strcmp(argv[1], "--ng4"))
             copy_from_user = NG4copy_from_user;
         else
