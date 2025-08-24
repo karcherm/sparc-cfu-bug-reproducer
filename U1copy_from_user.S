@@ -27,4 +27,4 @@
 
 #define PREAMBLE
 
-#include "arch/sparc/lib/U1memcpy.S"
+#include <arch/sparc/lib/U1memcpy.S>
