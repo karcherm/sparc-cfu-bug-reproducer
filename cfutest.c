@@ -6,8 +6,12 @@
 #include <ucontext.h>
 #include <sys/mman.h>
 
+void* U1memcpy(void* dest, const void* src, size_t len);
 void* U3memcpy(void* dest, const void* src, size_t len);
+size_t U1copy_from_user(void* dest, const void* src, size_t len);
 size_t U3copy_from_user(void* dest, const void* src, size_t len);
+
+size_t (*copy_from_user)(void*, const void*, size_t) = U3copy_from_user;
 
 #define BUFFERSIZE 8192
 #define STANDARDSIZE 1024
@@ -46,10 +50,22 @@ void my_sigsegv(int sig, siginfo_t *info, void *ucontext)
     signal(SIGSEGV, SIG_DFL);
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
     int i;
     struct sigaction sa;
+    if (argc > 1)
+    {
+        if (!strcmp(argv[1], "--u1"))
+            copy_from_user = U1copy_from_user;
+        else if(!strcmp(argv[1], "--u3"))
+            copy_from_user = U3copy_from_user;
+        else
+        {
+            fputs("Bad option, use --u1 or --u3 (default)\n", stderr);
+            return 1;
+        }
+    }
     srcbuffer = mmap(NULL, 3*BUFFERSIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (srcbuffer == MAP_FAILED)
     {
@@ -69,14 +85,16 @@ int main(void)
     {
         size_t remaining;
         memset(dstbuffer, 0xFF, BUFFERSIZE);
-        remaining = U3copy_from_user(dstbuffer, srcbuffer+BUFFERSIZE-i, STANDARDSIZE);
+        remaining = copy_from_user(dstbuffer, srcbuffer+BUFFERSIZE-i, STANDARDSIZE);
         if (remaining > STANDARDSIZE)
         {
             printf("WAY TOO HIGH: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
         }
         else if (remaining != STANDARDSIZE && dstbuffer[STANDARDSIZE - remaining - 1] != (char)0xAA)
         {
+            char* actual_end = memchr(dstbuffer, 0xFF, BUFFERSIZE);
             printf("TOO LOW: %d %zd, fault at %llx\n", i, remaining, last_sigsegv_pc);
+            printf(" correct remainder: %zd\n", STANDARDSIZE - (actual_end-dstbuffer));
         }
         else if (dstbuffer[STANDARDSIZE - remaining] != (char)0xFF)
         {
