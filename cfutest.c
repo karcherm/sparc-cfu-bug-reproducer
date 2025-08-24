@@ -111,7 +111,7 @@ int main(int argc, char** argv)
             copy_from_user = NG4copy_from_user;
         else
         {
-            fputs("Bad option, use --u1 or --u3 (default)\n", stderr);
+            fputs("Bad option, use --u1,  --u3 (default), --ng, --ng2 or --ng4\n", stderr);
             return 1;
         }
     }
