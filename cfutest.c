@@ -89,7 +89,7 @@ void run_from_user_test(size_t request_size, size_t bytes_till_fault, size_t dst
 }
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
-const size_t copy_sizes[] = {1, 7, 8, 15, 16, 17, 191, 192, 193, 319, 320, 321, 511, 1023, 1024};
+const size_t copy_sizes[] = {1, 7, 8, 15, 16, 17, 63, 64, 65, 191, 192, 193, 319, 320, 321, 511, 1023, 1024};
 const size_t misalignments[] = {0, 1, 7, 8, 15, 16, 17, 33, 63};
 int main(int argc, char** argv)
 {
