@@ -20,6 +20,7 @@
 #define LOAD(type,addr,dest)	type [addr], dest
 #define LOAD_TWIN(addr_reg,dest0,dest1)	\
 	ldda [addr_reg] ASI_BLK_INIT_QUAD_LDD_P, dest0
+#define STORE_INIT(src,addr)	stx src, [addr]
 #define EX_RETVAL(x)		%g0
 
 #ifdef __KERNEL__
