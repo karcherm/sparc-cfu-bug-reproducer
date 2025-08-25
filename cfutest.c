@@ -6,11 +6,13 @@
 #include <ucontext.h>
 #include <sys/mman.h>
 
+void* GENmemcpy(void* dest, const void* src, size_t len);
 void* U1memcpy(void* dest, const void* src, size_t len);
 void* U3memcpy(void* dest, const void* src, size_t len);
 void* NGmemcpy(void* dest, const void* src, size_t len);
 void* NG2memcpy(void* dest, const void* src, size_t len);
 void* NG4memcpy(void* dest, const void* src, size_t len);
+size_t GENcopy_from_user(void* dest, const void* src, size_t len);
 size_t U1copy_from_user(void* dest, const void* src, size_t len);
 size_t U3copy_from_user(void* dest, const void* src, size_t len);
 size_t NGcopy_from_user(void* dest, const void* src, size_t len);
@@ -99,7 +101,9 @@ int main(int argc, char** argv)
     struct sigaction sa;
     if (argc > 1)
     {
-        if (!strcmp(argv[1], "--u1"))
+        if (!strcmp(argv[1], "--gen"))
+            copy_from_user = GENcopy_from_user;
+        else if (!strcmp(argv[1], "--u1"))
             copy_from_user = U1copy_from_user;
         else if(!strcmp(argv[1], "--u3"))
             copy_from_user = U3copy_from_user;
@@ -111,7 +115,7 @@ int main(int argc, char** argv)
             copy_from_user = NG4copy_from_user;
         else
         {
-            fputs("Bad option, use --u1,  --u3 (default), --ng, --ng2 or --ng4\n", stderr);
+            fputs("Bad option, use --gen, --u1,  --u3 (default), --ng, --ng2 or --ng4\n", stderr);
             return 1;
         }
     }

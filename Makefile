@@ -5,6 +5,9 @@ CFLAGS=-g -O3
 
 all: cfutest
 
+GENmemcpy.o: $(KERNELSRC)/arch/sparc/lib/GENmemcpy.S
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $<
+
 # The define here is a workaround due to a missing macro in that file.
 # I don't want to patch that file to be able to use the kernel version
 # directly
@@ -27,8 +30,8 @@ NG4memcpy.o: $(KERNELSRC)/arch/sparc/lib/NG4memcpy.S
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $< -D 'VISEntryHalfFast(x)=VISEntryHalf' -D VISExitHalfFast=VISExitHalf
 
 OBJECTS = cfutest.o \
-          U1copy_from_user.o U3copy_from_user.o NGcopy_from_user.o NG2copy_from_user.o NG4copy_from_user.o \
-          U1memcpy.o U3memcpy.o Memcpy_utils.o NGmemcpy.o NG2memcpy.o NG4memcpy.o
+          GENcopy_from_user.o U1copy_from_user.o U3copy_from_user.o NGcopy_from_user.o NG2copy_from_user.o NG4copy_from_user.o \
+          GENmemcpy.o U1memcpy.o U3memcpy.o Memcpy_utils.o NGmemcpy.o NG2memcpy.o NG4memcpy.o
 cfutest: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
