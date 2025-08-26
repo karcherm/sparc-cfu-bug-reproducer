@@ -19,6 +19,8 @@ size_t NGcopy_from_user(void* dest, const void* src, size_t len);
 size_t NG2copy_from_user(void* dest, const void* src, size_t len);
 size_t NG4copy_from_user(void* dest, const void* src, size_t len);
 size_t GENcopy_to_user(void* dest, const void* src, size_t len);
+size_t U1copy_to_user(void* dest, const void* src, size_t len);
+size_t U3copy_to_user(void* dest, const void* src, size_t len);
 
 typedef size_t copy_fn(void*, const void*, size_t);
 copy_fn *copy_to_user = GENcopy_to_user;
@@ -110,13 +112,16 @@ int main(int argc, char** argv)
     struct sigaction sa;
     if (argc > 1)
     {
-        if (!strcmp(argv[1], "--gen"))
+        if (!strcmp(argv[1], "--gen")) {
             copy_from_user = GENcopy_from_user;
-        else if (!strcmp(argv[1], "--u1"))
+            copy_to_user = GENcopy_to_user;
+        } else if (!strcmp(argv[1], "--u1")) {
             copy_from_user = U1copy_from_user;
-        else if(!strcmp(argv[1], "--u3"))
+            copy_to_user = U1copy_to_user;
+        } else if(!strcmp(argv[1], "--u3")){
             copy_from_user = U3copy_from_user;
-        else if(!strcmp(argv[1], "--ng"))
+            copy_to_user = U3copy_to_user;
+        } else if(!strcmp(argv[1], "--ng"))
             copy_from_user = NGcopy_from_user;
         else if(!strcmp(argv[1], "--ng2"))
             copy_from_user = NG2copy_from_user;
