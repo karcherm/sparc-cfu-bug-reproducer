@@ -18,8 +18,10 @@ size_t U3copy_from_user(void* dest, const void* src, size_t len);
 size_t NGcopy_from_user(void* dest, const void* src, size_t len);
 size_t NG2copy_from_user(void* dest, const void* src, size_t len);
 size_t NG4copy_from_user(void* dest, const void* src, size_t len);
+size_t GENcopy_to_user(void* dest, const void* src, size_t len);
 
 typedef size_t copy_fn(void*, const void*, size_t);
+copy_fn *copy_to_user = GENcopy_to_user;
 copy_fn *copy_from_user = U3copy_from_user;
 
 #define BUFFERSIZE 8192
@@ -59,7 +61,7 @@ void my_sigsegv(int sig, siginfo_t *info, void *ucontext)
     signal(SIGSEGV, SIG_DFL);
 }
 
-void run_test(copy_fn *fn, char *dest, const char *src, size_t destspace, size_t try_to_copy, size_t till_fault)
+void run_test(const char* ctx, copy_fn *fn, char *dest, const char *src, size_t destspace, size_t try_to_copy, size_t till_fault)
 {
     size_t indicated_remaining, actual_remaining;
     char* actual_end;
@@ -76,20 +78,27 @@ void run_test(copy_fn *fn, char *dest, const char *src, size_t destspace, size_t
     error_type = NULL;
     if (indicated_remaining > try_to_copy)
         error_type = "UNREASONABLY HIGH";
+    else if (try_to_copy - indicated_remaining > destspace)
+        error_type = "PAST_FAULT";
     else if (indicated_remaining != try_to_copy && dest[try_to_copy - indicated_remaining - 1] != (char)0xAA)
         error_type = "TOO LOW";
-    else if (dest[try_to_copy - indicated_remaining] == (char)0xAA)
+    else if (destspace != try_to_copy - indicated_remaining && dest[try_to_copy - indicated_remaining] == (char)0xAA)
         error_type = "TOO_HIGH";
 
     if (error_type)
     {
-        printf("%s: %d bytes till fault returned %zd of %zd bytes left, but should have returned %zd, fault at %llx\n", error_type, till_fault, indicated_remaining, try_to_copy, actual_remaining, last_sigsegv_pc);
+        printf("%s: %s: %d bytes till fault returned %zd of %zd bytes left, but should have returned %zd, fault at %llx\n", ctx, error_type, till_fault, indicated_remaining, try_to_copy, actual_remaining, last_sigsegv_pc);
     }
 }
 
 void run_from_user_test(size_t request_size, size_t bytes_till_fault, size_t dst_misalignment)
 {
-    run_test(copy_from_user, dstbuffer + dst_misalignment, srcbuffer + BUFFERSIZE - bytes_till_fault, request_size + 128, request_size, bytes_till_fault);
+    run_test("CFU", copy_from_user, dstbuffer + dst_misalignment, srcbuffer + BUFFERSIZE - bytes_till_fault, request_size + 128, request_size, bytes_till_fault);
+}
+
+void run_to_user_test(size_t request_size, size_t bytes_till_fault, size_t src_misalignment)
+{
+    run_test("CTU", copy_to_user, dstbuffer + BUFFERSIZE - bytes_till_fault, srcbuffer + src_misalignment, bytes_till_fault, request_size, bytes_till_fault);
 }
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
@@ -142,6 +151,7 @@ int main(int argc, char** argv)
             for (i = 0; i <= copy_size; i++)
             {
                 run_from_user_test(copy_size, i, misalignments[alignidx]);
+                run_to_user_test(copy_size, i, misalignments[alignidx]);
             }
         }
     }
