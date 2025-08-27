@@ -48,18 +48,28 @@ const extable_t* const extable_end = (const extable_t*)&__stop___ex_table;
 
 volatile uint64_t last_sigsegv_pc;
 
+#ifdef __linux__
+typedef struct sigcontext ctx_t;
+#define TPC sigc_regs.tpc
+#define TNPC sigc_regc.tnpc
+#else
+typedef ucontext_t ctx_t;
+#define TPC uc_mcontext.gregs[REG_PC]
+#define TNPC uc_mcontext.gregs[REG_nPC]
+#endif
+
 void my_sigsegv(int sig, siginfo_t *info, void *ucontext)
 {
     const extable_t *ptr;
-    struct sigcontext *sc = (struct sigcontext*)ucontext;
-    last_sigsegv_pc = sc->sigc_regs.tpc;
-    uint32_t low_pc = sc->sigc_regs.tpc & 0xffffffff;
+    ctx_t *ctx = (ctx_t*)ucontext;
+    last_sigsegv_pc = ctx->TPC;
+    uint32_t low_pc = ctx->TPC & 0xffffffff;
     for (ptr = extable_start; ptr < extable_end; ptr++)
     {
         if (ptr->code_addr == low_pc)
         {
-            sc->sigc_regs.tnpc = sc->sigc_regs.tpc - ptr->code_addr + ptr->handler_addr;
-            sc->sigc_regs.tpc = sc->sigc_regs.tnpc - 4;
+            ctx->TNPC = ctx->TPC - ptr->code_addr + ptr->handler_addr;
+            ctx->TPC = ctx->TNPC - 4;
             return;
         }
     }
