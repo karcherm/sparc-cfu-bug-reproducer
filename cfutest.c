@@ -12,18 +12,21 @@ void* U3memcpy(void* dest, const void* src, size_t len);
 void* NGmemcpy(void* dest, const void* src, size_t len);
 void* NG2memcpy(void* dest, const void* src, size_t len);
 void* NG4memcpy(void* dest, const void* src, size_t len);
+void* M7memcpy(void* dest, const void* src, size_t len);
 size_t GENcopy_from_user(void* dest, const void* src, size_t len);
 size_t U1copy_from_user(void* dest, const void* src, size_t len);
 size_t U3copy_from_user(void* dest, const void* src, size_t len);
 size_t NGcopy_from_user(void* dest, const void* src, size_t len);
 size_t NG2copy_from_user(void* dest, const void* src, size_t len);
 size_t NG4copy_from_user(void* dest, const void* src, size_t len);
+size_t M7copy_from_user(void* dest, const void* src, size_t len);
 size_t GENcopy_to_user(void* dest, const void* src, size_t len);
 size_t U1copy_to_user(void* dest, const void* src, size_t len);
 size_t U3copy_to_user(void* dest, const void* src, size_t len);
 size_t NGcopy_to_user(void* dest, const void* src, size_t len);
 size_t NG2copy_to_user(void* dest, const void* src, size_t len);
 size_t NG4copy_to_user(void* dest, const void* src, size_t len);
+size_t M7copy_to_user(void* dest, const void* src, size_t len);
 
 typedef size_t copy_fn(void*, const void*, size_t);
 copy_fn *copy_to_user = GENcopy_to_user;
@@ -143,6 +146,9 @@ int main(int argc, char** argv)
         } else if(!strcmp(argv[1], "--ng4")) {
             copy_from_user = NG4copy_from_user;
             copy_to_user = NG4copy_to_user;
+        } else if(!strcmp(argv[1], "--m7")) {
+            copy_from_user = M7copy_from_user;
+            copy_to_user = M7copy_to_user;
         }
         else
         {

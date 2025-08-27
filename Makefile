@@ -1,6 +1,6 @@
 KERNELSRC=.
 
-ASFLAGS=-g -mcpu=niagara4 -include userheader.h -include asm/asi.h -I $(KERNELSRC)
+ASFLAGS=-g -mcpu=niagara4 -include userheader.h -include asm/asi.h -I $(KERNELSRC) -D g7=g5
 CFLAGS=-g -O3
 
 all: cfutest
@@ -29,10 +29,13 @@ NG2memcpy.o: $(KERNELSRC)/arch/sparc/lib/NG2memcpy.S
 NG4memcpy.o: $(KERNELSRC)/arch/sparc/lib/NG4memcpy.S
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $< -D 'VISEntryHalfFast(x)=VISEntryHalf' -D VISExitHalfFast=VISExitHalf
 
+M7memcpy.o: $(KERNELSRC)/arch/sparc/lib/M7memcpy.S
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -c -o $@ $< -D 'VISEntryHalfFast(x)=VISEntryHalf' -D VISExitHalfFast=VISExitHalf -D g7=g5
+
 OBJECTS = cfutest.o \
-          GENcopy_from_user.o U1copy_from_user.o U3copy_from_user.o NGcopy_from_user.o NG2copy_from_user.o NG4copy_from_user.o \
-          GENcopy_to_user.o U1copy_to_user.o U3copy_to_user.o NGcopy_to_user.o NG2copy_to_user.o NG4copy_to_user.o \
-          GENmemcpy.o U1memcpy.o U3memcpy.o Memcpy_utils.o NGmemcpy.o NG2memcpy.o NG4memcpy.o
+          GENcopy_from_user.o U1copy_from_user.o U3copy_from_user.o NGcopy_from_user.o NG2copy_from_user.o NG4copy_from_user.o M7copy_from_user.o\
+          GENcopy_to_user.o U1copy_to_user.o U3copy_to_user.o NGcopy_to_user.o NG2copy_to_user.o NG4copy_to_user.o M7copy_to_user.o \
+          GENmemcpy.o U1memcpy.o U3memcpy.o Memcpy_utils.o NGmemcpy.o NG2memcpy.o NG4memcpy.o M7memcpy.o
 cfutest: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
