@@ -8,12 +8,12 @@
 ENTRY(__restore_asi_fp)
 	VISExitHalf
 	retl
-	 wr	%g0, ASI_AIUS, %asi
+	 nop
 ENDPROC(__restore_asi_fp)
 
 ENTRY(__restore_asi)
 	retl
-	 wr	%g0, ASI_AIUS, %asi
+	 nop
 ENDPROC(__restore_asi)
 
 ENTRY(memcpy_retl_o2)
